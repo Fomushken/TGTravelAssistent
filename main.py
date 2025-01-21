@@ -1,31 +1,40 @@
-import logging
 import asyncio
-from tkinter.font import names
+import logging
+import sys
 
-from aiogram import types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram import Router
-from config import BotConfig
+from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
+from aiogram.fsm.storage.redis import RedisStorage
+from redis.asyncio.client import Redis
+from config import load_config
+from handlers.commands_handlers import router as commands_router
+from handlers.menu_handlers import router as menu_router
+from handlers.help_menu_handlers import router as help_menu_router
+from handlers.travel_handlers import router as travel_router
+from commands_menu import set_main_menu
 
 
-# logging
-logging.basicConfig(level=logging.INFO)
+async def main() -> None:
+    config = load_config()
+    bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    redis = Redis()
+    storage = RedisStorage(redis)
+    dp = Dispatcher(storage=storage)
+    dp.include_router(commands_router)
+    dp.include_router(help_menu_router)
+    dp.include_router(menu_router)
+    dp.include_router(travel_router)
 
-# bot initialize
-config = BotConfig()
-bot = config.bot
-dp = config.dp
 
-router = Router()
+    await bot.delete_webhook(drop_pending_updates=True)
+    await set_main_menu(bot)
+    await dp.start_polling(bot)
 
-# bot running
-async def main():
-    # routers register
-    dp.include_router(router)
 
-    # run the bot
-    await bot.delete_webhook()
-    await dp.start_polling()
-
-if __name__ == '__main__':
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        stream=sys.stdout,
+        format='%(filename)s:%(lineno)d #%(levelname)-8s [%(asctime)s] - %(name)s - %(message)s')
     asyncio.run(main())

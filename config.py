@@ -1,15 +1,42 @@
-import os
+from dataclasses import dataclass
 from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher
+import os
 
 load_dotenv()
 
+# @dataclass
+# class DBConfig:
+#     databate: str
+#     db_host: str
+#     db_user: str
+#     db_password: str
+#
 
-class BotConfig:
-    def __init__(self):
-        self.token = os.getenv("BOT_TOKEN")
-        if not self.token:
-            raise ValueError("Bot token not set")
+@dataclass
+class TgBot:
+    token: str
+    # admin_ids: str
 
-        self.bot = Bot(token=self.token)
-        self.dp = Dispatcher(bot=self.bot)
+
+@dataclass
+class RedisConfig:
+    url: str
+
+
+@dataclass
+class Config:
+    tg_bot: TgBot
+    # db: DBConfig
+    redis: RedisConfig
+
+
+def load_config() -> Config:
+
+    return Config(
+        tg_bot=TgBot(
+            token=os.getenv("BOT_TOKEN"),
+        ),
+        redis = RedisConfig(
+            url=os.getenv("REDIS_URL")
+        )
+    )
